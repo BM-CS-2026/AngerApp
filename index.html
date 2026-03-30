@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#1a1a2e">
+  <title>Inner Calm</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- ===== HEADER ===== -->
+  <header class="app-header">
+    <h1>Inner Calm</h1>
+    <span class="week-badge" id="weekBadge">Week 1</span>
+  </header>
+
+  <!-- ===== TODAY VIEW ===== -->
+  <div id="viewToday" class="view active">
+    <p class="greeting" id="greeting">Good morning</p>
+    <p class="date-display" id="dateDisplay"></p>
+
+    <div class="quick-tools">
+      <button class="quick-tool" onclick="openTool('breathing')">
+        <span class="qt-icon">🌬</span>
+        <span class="qt-label">Breathe</span>
+      </button>
+      <button class="quick-tool" onclick="openTool('grounding')">
+        <span class="qt-icon">🌿</span>
+        <span class="qt-label">Ground</span>
+      </button>
+      <button class="quick-tool" onclick="switchTab('log')">
+        <span class="qt-icon">📝</span>
+        <span class="qt-label">Log Anger</span>
+      </button>
+      <button class="quick-tool" onclick="openTool('timeout')">
+        <span class="qt-icon">⏸</span>
+        <span class="qt-label">Time-Out</span>
+      </button>
+    </div>
+
+    <div class="section-header">
+      <h2>Today's Practice</h2>
+      <span class="tag tag-blue" id="todayTime">~20 min</span>
+    </div>
+    <ul class="checklist" id="dailyChecklist"></ul>
+
+    <div class="section-header mt-20">
+      <h2>This Week</h2>
+    </div>
+    <div id="weekFocus" class="card">
+      <p id="weekFocusText"></p>
+    </div>
+  </div>
+
+  <!-- ===== LOG VIEW ===== -->
+  <div id="viewLog" class="view">
+    <div id="logForm">
+      <div class="section-header">
+        <h2>Anger Log</h2>
+        <button class="btn btn-sm btn-secondary" onclick="showLogHistory()">History</button>
+      </div>
+
+      <div class="form-group">
+        <label>Setting / Context</label>
+        <input type="text" id="logSetting" placeholder="Where were you? Who was there?">
+      </div>
+
+      <div class="form-group">
+        <label>Trigger (observable facts only)</label>
+        <textarea id="logTrigger" rows="2" placeholder="What specifically happened?"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>Initial Thought</label>
+        <textarea id="logThought" rows="2" placeholder='Your first thought: "They always...", "This is..."'></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>Body Signals</label>
+        <div class="body-signals" id="bodySignals">
+          <button class="body-signal" data-signal="heart-pounding">Heart pounding</button>
+          <button class="body-signal" data-signal="face-flushing">Face flushing</button>
+          <button class="body-signal" data-signal="jaw-clenching">Jaw clenching</button>
+          <button class="body-signal" data-signal="throat-tight">Throat tight</button>
+          <button class="body-signal" data-signal="fists-clenched">Fists clenched</button>
+          <button class="body-signal" data-signal="shoulders-tense">Shoulders tense</button>
+          <button class="body-signal" data-signal="stomach-knot">Stomach knot</button>
+          <button class="body-signal" data-signal="chest-tight">Chest tight</button>
+          <button class="body-signal" data-signal="trembling">Trembling</button>
+          <button class="body-signal" data-signal="urge-to-move">Urge to move</button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Anger Intensity</label>
+        <div class="intensity-display" id="intensityDisplay">5</div>
+        <input type="range" id="logIntensity" min="1" max="10" value="5" class="intensity-slider">
+        <div class="intensity-labels">
+          <span>Mild frustration</span>
+          <span>Explosive</span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Action Taken</label>
+        <textarea id="logAction" rows="2" placeholder="What did you actually do?"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>Aftermath (30 min later)</label>
+        <textarea id="logAftermath" rows="2" placeholder="How did you feel? Any consequences?"></textarea>
+      </div>
+
+      <button class="btn btn-primary btn-full mt-8" onclick="saveLog()">Save Log Entry</button>
+    </div>
+
+    <div id="logHistory" style="display:none">
+      <button class="back-btn" onclick="hideLogHistory()">← New Entry</button>
+      <div class="section-header">
+        <h2>Log History</h2>
+        <span class="tag tag-blue" id="logCount">0 entries</span>
+      </div>
+      <div id="logList"></div>
+    </div>
+  </div>
+
+  <!-- ===== TOOLS VIEW ===== -->
+  <div id="viewTools" class="view">
+    <div id="toolsList">
+      <h2 class="mb-16">Calming Tools</h2>
+
+      <div class="tool-card" onclick="openTool('breathing')">
+        <div class="tool-card-top">
+          <span class="tool-emoji">🌬</span>
+          <h3>Extended Exhale Breathing</h3>
+          <span class="tool-time">5-10 min</span>
+        </div>
+        <p>4-count inhale, 1-2 hold, 6-8 exhale. Activates your parasympathetic nervous system.</p>
+      </div>
+
+      <div class="tool-card" onclick="openTool('grounding')">
+        <div class="tool-card-top">
+          <span class="tool-emoji">🌿</span>
+          <h3>5-4-3-2-1 Grounding</h3>
+          <span class="tool-time">60 sec</span>
+        </div>
+        <p>Redirect attention to sensory input. Interrupts the amygdala cascade in real time.</p>
+      </div>
+
+      <div class="tool-card" onclick="openTool('pmr')">
+        <div class="tool-card-top">
+          <span class="tool-emoji">💪</span>
+          <h3>Progressive Muscle Relaxation</h3>
+          <span class="tool-time">15 min</span>
+        </div>
+        <p>Tense and release 11 muscle groups. Lowers baseline arousal so triggers produce smaller spikes.</p>
+      </div>
+
+      <div class="tool-card" onclick="openTool('timeout')">
+        <div class="tool-card-top">
+          <span class="tool-emoji">⏸</span>
+          <h3>Time-Out Protocol</h3>
+          <span class="tool-time">8-10 min</span>
+        </div>
+        <p>5-step structured time-out: Notice, Signal, Move, Regulate, Return.</p>
+      </div>
+
+      <div class="tool-card" onclick="openTool('feetfloor')">
+        <div class="tool-card-top">
+          <span class="tool-emoji">🦶</span>
+          <h3>Feet on the Floor Reset</h3>
+          <span class="tool-time">30 sec</span>
+        </div>
+        <p>Press feet into the ground, breathe out slowly. Instant physical grounding before responding.</p>
+      </div>
+
+      <h2 class="mt-20 mb-16">Cognitive Tools</h2>
+
+      <div class="tool-card" onclick="openTool('thoughtrecord')">
+        <div class="tool-card-top">
+          <span class="tool-emoji">🧠</span>
+          <h3>CBT Thought Record</h3>
+          <span class="tool-time">15-20 min</span>
+        </div>
+        <p>6-column thought record. Identify distortions and reframe automatic thoughts.</p>
+      </div>
+
+      <div class="tool-card" onclick="openTool('oppositeaction')">
+        <div class="tool-card-top">
+          <span class="tool-emoji">🔄</span>
+          <h3>DBT Opposite Action</h3>
+          <span class="tool-time">5 min</span>
+        </div>
+        <p>Act opposite to the anger urge. Reduces the emotion's intensity and duration.</p>
+      </div>
+
+      <div class="tool-card" onclick="openTool('defusion')">
+        <div class="tool-card-top">
+          <span class="tool-emoji">☁️</span>
+          <h3>ACT Defusion</h3>
+          <span class="tool-time">10 min</span>
+        </div>
+        <p>Create psychological distance from angry thoughts. Observe them rather than be dominated.</p>
+      </div>
+
+      <div class="tool-card" onclick="openTool('dearman')">
+        <div class="tool-card-top">
+          <span class="tool-emoji">🗣</span>
+          <h3>DEAR MAN Communication</h3>
+          <span class="tool-time">15 min</span>
+        </div>
+        <p>Express needs assertively without attacking or withdrawing. Script difficult conversations.</p>
+      </div>
+
+      <div class="tool-card" onclick="openTool('selfcompassion')">
+        <div class="tool-card-top">
+          <span class="tool-emoji">💛</span>
+          <h3>Self-Compassion</h3>
+          <span class="tool-time">3 min</span>
+        </div>
+        <p>After an episode you're disappointed with. Not self-indulgence — a neurological calming act.</p>
+      </div>
+    </div>
+
+    <!-- Tool sub-views rendered by JS -->
+    <div id="toolDetail" style="display:none"></div>
+  </div>
+
+  <!-- ===== PRACTICE VIEW ===== -->
+  <div id="viewPractice" class="view">
+    <h2 class="mb-12">Morning & Evening</h2>
+
+    <div class="tool-card" onclick="openRoutine('morning')">
+      <div class="tool-card-top">
+        <span class="tool-emoji">🌅</span>
+        <h3>Morning Intention</h3>
+        <span class="tool-time">10-15 min</span>
+      </div>
+      <p>Set your intention, identify triggers, name the skill you'll deploy today.</p>
+    </div>
+
+    <div class="tool-card" onclick="openRoutine('evening')">
+      <div class="tool-card-top">
+        <span class="tool-emoji">🌙</span>
+        <h3>Evening Reflection</h3>
+        <span class="tool-time">10-15 min</span>
+      </div>
+      <p>Log episodes, review skill usage, emotional reset, gratitude.</p>
+    </div>
+
+    <div class="tool-card" onclick="openRoutine('midday')">
+      <div class="tool-card-top">
+        <span class="tool-emoji">☀️</span>
+        <h3>Mid-Day Check-In</h3>
+        <span class="tool-time">2-3 min</span>
+      </div>
+      <p>Quick internal scan: anger level, body tension, rumination.</p>
+    </div>
+
+    <h2 class="mt-20 mb-12">Weekly Practice</h2>
+    <div class="tool-card" onclick="openRoutine('weeklyreview')">
+      <div class="tool-card-top">
+        <span class="tool-emoji">📊</span>
+        <h3>Weekly Pattern Review</h3>
+        <span class="tool-time">15-20 min</span>
+      </div>
+      <p>Identify top triggers, earliest body signals, common distortions, intensity trend.</p>
+    </div>
+  </div>
+
+  <!-- ===== PROGRESS VIEW ===== -->
+  <div id="viewProgress" class="view">
+    <h2 class="mb-16">Your Progress</h2>
+
+    <div class="stat-grid" id="statGrid">
+      <div class="stat-card">
+        <div class="stat-value" id="statEntries">0</div>
+        <div class="stat-label">Log Entries</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="statAvgIntensity">--</div>
+        <div class="stat-label">Avg Intensity</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="statCurrentWeek">1</div>
+        <div class="stat-label">Current Week</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="statStreak">0</div>
+        <div class="stat-label">Day Streak</div>
+      </div>
+    </div>
+
+    <div class="chart-container">
+      <div class="chart-title">Anger Intensity (Last 7 Entries)</div>
+      <div class="chart-bars" id="intensityChart"></div>
+    </div>
+
+    <div class="section-header mt-16">
+      <h2>Weekly Self-Assessment</h2>
+      <button class="btn btn-sm btn-primary" onclick="saveAssessment()">Save</button>
+    </div>
+
+    <div class="assessment-row">
+      <span class="assessment-label">Avg daily anger intensity</span>
+      <div class="assessment-score" data-metric="avgAnger" id="scoreAvgAnger"></div>
+    </div>
+    <div class="assessment-row">
+      <span class="assessment-label">Episodes per week</span>
+      <div class="assessment-score" data-metric="episodes" id="scoreEpisodes"></div>
+    </div>
+    <div class="assessment-row">
+      <span class="assessment-label">Recovery time</span>
+      <div class="assessment-score" data-metric="recovery" id="scoreRecovery"></div>
+    </div>
+    <div class="assessment-row">
+      <span class="assessment-label">Skill use rate</span>
+      <div class="assessment-score" data-metric="skillUse" id="scoreSkillUse"></div>
+    </div>
+    <div class="assessment-row">
+      <span class="assessment-label">Satisfaction w/ handling</span>
+      <div class="assessment-score" data-metric="satisfaction" id="scoreSatisfaction"></div>
+    </div>
+
+    <h2 class="mt-20 mb-12">12-Week Program Map</h2>
+    <div id="weekMap"></div>
+
+    <div class="card mt-16">
+      <div class="card-header">
+        <span class="card-icon">⚙️</span>
+        <h3>Settings</h3>
+      </div>
+      <div class="form-group">
+        <label>Program Start Date</label>
+        <input type="date" id="startDateInput" onchange="updateStartDate(this.value)">
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MODAL (for routines & tool details) ===== -->
+  <div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+    <div class="modal" id="modalContent" onclick="event.stopPropagation()"></div>
+  </div>
+
+  <!-- ===== TAB BAR ===== -->
+  <nav class="tab-bar">
+    <button class="active" data-tab="today" onclick="switchTab('today')">
+      <span class="tab-icon">🏠</span>Today
+    </button>
+    <button data-tab="log" onclick="switchTab('log')">
+      <span class="tab-icon">📝</span>Log
+    </button>
+    <button data-tab="tools" onclick="switchTab('tools')">
+      <span class="tab-icon">🧘</span>Tools
+    </button>
+    <button data-tab="practice" onclick="switchTab('practice')">
+      <span class="tab-icon">📅</span>Routine
+    </button>
+    <button data-tab="progress" onclick="switchTab('progress')">
+      <span class="tab-icon">📈</span>Progress
+    </button>
+  </nav>
+
+  <script src="js/app.js"></script>
+</body>
+</html>
