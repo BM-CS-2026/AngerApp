@@ -62,7 +62,6 @@
     <div id="logForm">
       <div class="section-header">
         <h2>Anger Log</h2>
-        <button class="btn btn-sm btn-secondary" onclick="showLogHistory()">History</button>
       </div>
 
       <div class="form-group">
@@ -107,6 +106,24 @@
       </div>
 
       <div class="form-group">
+        <label>Time from trigger to peak anger (seconds)</label>
+        <div class="timing-row">
+          <input type="number" id="logTimeToPeak" min="0" placeholder="e.g. 10">
+          <span class="timing-unit">sec</span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Total duration of anger event</label>
+        <div class="timing-row">
+          <input type="number" id="logDurationMin" min="0" placeholder="min" style="width:80px">
+          <span class="timing-unit">min</span>
+          <input type="number" id="logDurationSec" min="0" max="59" placeholder="sec" style="width:80px">
+          <span class="timing-unit">sec</span>
+        </div>
+      </div>
+
+      <div class="form-group">
         <label>Action Taken</label>
         <textarea id="logAction" rows="2" placeholder="What did you actually do?"></textarea>
       </div>
@@ -116,17 +133,66 @@
         <textarea id="logAftermath" rows="2" placeholder="How did you feel? Any consequences?"></textarea>
       </div>
 
+      <div class="form-group">
+        <label>What resolved it?</label>
+        <textarea id="logResolved" rows="2" placeholder="What finally brought the anger down?"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>What can I do better next time?</label>
+        <textarea id="logBetterNext" rows="2" placeholder="Skills I could deploy, things I'd change..."></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>Selfie (optional)</label>
+        <div class="photo-upload" id="logPhotoUpload">
+          <input type="file" accept="image/*" capture="user" id="logPhoto" onchange="previewLogPhoto(this)" style="display:none">
+          <button class="btn btn-secondary btn-sm" onclick="document.getElementById('logPhoto').click()">📷 Take / Upload Photo</button>
+          <div id="logPhotoPreview"></div>
+        </div>
+      </div>
+
       <button class="btn btn-primary btn-full mt-8" onclick="saveLog()">Save Log Entry</button>
     </div>
+  </div>
 
-    <div id="logHistory" style="display:none">
-      <button class="back-btn" onclick="hideLogHistory()">← New Entry</button>
-      <div class="section-header">
-        <h2>Log History</h2>
-        <span class="tag tag-blue" id="logCount">0 entries</span>
-      </div>
-      <div id="logList"></div>
+  <!-- ===== HISTORY VIEW ===== -->
+  <div id="viewHistory" class="view">
+    <div class="section-header">
+      <h2>History</h2>
+      <span class="tag tag-blue" id="logCount">0 entries</span>
     </div>
+
+    <!-- Graphs Section -->
+    <div id="historyGraphs">
+      <div class="card">
+        <div class="card-header"><h3>30-Day Heatmap</h3></div>
+        <div id="calendarHeatmap" class="calendar-heatmap"></div>
+        <div class="heatmap-legend">
+          <span>None</span>
+          <div class="heatmap-swatch" style="background:var(--surface3)"></div>
+          <div class="heatmap-swatch" style="background:#66bb6a"></div>
+          <div class="heatmap-swatch" style="background:#ffb74d"></div>
+          <div class="heatmap-swatch" style="background:#ff8a65"></div>
+          <div class="heatmap-swatch" style="background:#ef5350"></div>
+          <span>10</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h3>Time of Day</h3></div>
+        <div id="todChart" class="tod-chart"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h3>Intensity Trend</h3></div>
+        <div class="chart-bars" id="intensityChart" style="height:120px"></div>
+      </div>
+    </div>
+
+    <!-- Log Entries List -->
+    <h3 class="mt-16 mb-12">All Entries</h3>
+    <div id="logList"></div>
   </div>
 
   <!-- ===== TOOLS VIEW ===== -->
@@ -164,7 +230,7 @@
       <div class="tool-card" onclick="openTool('timeout')">
         <div class="tool-card-top">
           <span class="tool-emoji">⏸</span>
-          <h3>Time-Out Protocol</h3>
+          <h3>Structured Time-Out</h3>
           <span class="tool-time">8-10 min</span>
         </div>
         <p>5-step structured time-out: Notice, Signal, Move, Regulate, Return.</p>
@@ -202,8 +268,8 @@
       <div class="tool-card" onclick="openTool('defusion')">
         <div class="tool-card-top">
           <span class="tool-emoji">☁️</span>
-          <h3>ACT Defusion</h3>
-          <span class="tool-time">10 min</span>
+          <h3>ACT Defusion & Acceptance</h3>
+          <span class="tool-time">10-15 min</span>
         </div>
         <p>Create psychological distance from angry thoughts. Observe them rather than be dominated.</p>
       </div>
@@ -225,52 +291,48 @@
         </div>
         <p>After an episode you're disappointed with. Not self-indulgence — a neurological calming act.</p>
       </div>
+
+      <h2 class="mt-20 mb-16">Daily Routines</h2>
+
+      <div class="tool-card" onclick="openRoutine('morning')">
+        <div class="tool-card-top">
+          <span class="tool-emoji">🌅</span>
+          <h3>Morning Intention</h3>
+          <span class="tool-time">10-15 min</span>
+        </div>
+        <p>Set your intention, identify triggers, name the skill you'll deploy today.</p>
+      </div>
+
+      <div class="tool-card" onclick="openRoutine('evening')">
+        <div class="tool-card-top">
+          <span class="tool-emoji">🌙</span>
+          <h3>Evening Reflection</h3>
+          <span class="tool-time">10-15 min</span>
+        </div>
+        <p>Log episodes, review skill usage, emotional reset, gratitude.</p>
+      </div>
+
+      <div class="tool-card" onclick="openRoutine('midday')">
+        <div class="tool-card-top">
+          <span class="tool-emoji">☀️</span>
+          <h3>Mid-Day Check-In</h3>
+          <span class="tool-time">2-3 min</span>
+        </div>
+        <p>Quick internal scan: anger level, body tension, rumination.</p>
+      </div>
+
+      <div class="tool-card" onclick="openRoutine('weeklyreview')">
+        <div class="tool-card-top">
+          <span class="tool-emoji">📊</span>
+          <h3>Weekly Pattern Review</h3>
+          <span class="tool-time">15-20 min</span>
+        </div>
+        <p>Identify top triggers, earliest body signals, common distortions, intensity trend.</p>
+      </div>
     </div>
 
     <!-- Tool sub-views rendered by JS -->
     <div id="toolDetail" style="display:none"></div>
-  </div>
-
-  <!-- ===== PRACTICE VIEW ===== -->
-  <div id="viewPractice" class="view">
-    <h2 class="mb-12">Morning & Evening</h2>
-
-    <div class="tool-card" onclick="openRoutine('morning')">
-      <div class="tool-card-top">
-        <span class="tool-emoji">🌅</span>
-        <h3>Morning Intention</h3>
-        <span class="tool-time">10-15 min</span>
-      </div>
-      <p>Set your intention, identify triggers, name the skill you'll deploy today.</p>
-    </div>
-
-    <div class="tool-card" onclick="openRoutine('evening')">
-      <div class="tool-card-top">
-        <span class="tool-emoji">🌙</span>
-        <h3>Evening Reflection</h3>
-        <span class="tool-time">10-15 min</span>
-      </div>
-      <p>Log episodes, review skill usage, emotional reset, gratitude.</p>
-    </div>
-
-    <div class="tool-card" onclick="openRoutine('midday')">
-      <div class="tool-card-top">
-        <span class="tool-emoji">☀️</span>
-        <h3>Mid-Day Check-In</h3>
-        <span class="tool-time">2-3 min</span>
-      </div>
-      <p>Quick internal scan: anger level, body tension, rumination.</p>
-    </div>
-
-    <h2 class="mt-20 mb-12">Weekly Practice</h2>
-    <div class="tool-card" onclick="openRoutine('weeklyreview')">
-      <div class="tool-card-top">
-        <span class="tool-emoji">📊</span>
-        <h3>Weekly Pattern Review</h3>
-        <span class="tool-time">15-20 min</span>
-      </div>
-      <p>Identify top triggers, earliest body signals, common distortions, intensity trend.</p>
-    </div>
   </div>
 
   <!-- ===== PROGRESS VIEW ===== -->
@@ -294,11 +356,6 @@
         <div class="stat-value" id="statStreak">0</div>
         <div class="stat-label">Day Streak</div>
       </div>
-    </div>
-
-    <div class="chart-container">
-      <div class="chart-title">Anger Intensity (Last 7 Entries)</div>
-      <div class="chart-bars" id="intensityChart"></div>
     </div>
 
     <div class="section-header mt-16">
@@ -342,7 +399,7 @@
     </div>
   </div>
 
-  <!-- ===== MODAL (for routines & tool details) ===== -->
+  <!-- ===== MODAL (for routines & editing) ===== -->
   <div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
     <div class="modal" id="modalContent" onclick="event.stopPropagation()"></div>
   </div>
@@ -355,11 +412,11 @@
     <button data-tab="log" onclick="switchTab('log')">
       <span class="tab-icon">📝</span>Log
     </button>
+    <button data-tab="history" onclick="switchTab('history')">
+      <span class="tab-icon">📊</span>History
+    </button>
     <button data-tab="tools" onclick="switchTab('tools')">
       <span class="tab-icon">🧘</span>Tools
-    </button>
-    <button data-tab="practice" onclick="switchTab('practice')">
-      <span class="tab-icon">📅</span>Routine
     </button>
     <button data-tab="progress" onclick="switchTab('progress')">
       <span class="tab-icon">📈</span>Progress
