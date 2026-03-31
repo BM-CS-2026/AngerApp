@@ -1,8 +1,9 @@
-const CACHE_NAME = 'innercalm-v2';
+const CACHE_NAME = 'stoicsage-v1';
 const ASSETS = [
   './',
   './index.html',
   './css/style.css',
+  './js/db.js',
   './js/app.js',
   './manifest.json'
 ];

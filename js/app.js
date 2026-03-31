@@ -83,26 +83,16 @@ const DEAR_MAN = [
 ];
 
 // ===== STATE =====
-let state = loadState();
-
-function loadState() {
-  const saved = localStorage.getItem('innercalm_state');
-  const defaults = {
-    startDate: new Date().toISOString().split('T')[0],
-    logs: [],
-    thoughtRecords: [],
-    assessments: [],
-    morningEntries: [],
-    eveningEntries: [],
-    dailyChecks: {},
-    streak: 0,
-  };
-  return saved ? { ...defaults, ...JSON.parse(saved) } : defaults;
-}
-
-function saveState() {
-  localStorage.setItem('innercalm_state', JSON.stringify(state));
-}
+let state = {
+  startDate: new Date().toISOString().split('T')[0],
+  logs: [],
+  thoughtRecords: [],
+  assessments: [],
+  morningEntries: [],
+  eveningEntries: [],
+  dailyChecks: {},
+  streak: 0,
+};
 
 // ===== INIT =====
 document.addEventListener('DOMContentLoaded', () => {
@@ -112,7 +102,14 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-function initApp() {
+async function initApp() {
+  // Migrate from old localStorage if needed
+  await migrateFromLocalStorage();
+
+  // Load state from PouchDB
+  state = await loadFullState();
+
+  // Init UI
   updateGreeting();
   updateDateDisplay();
   updateWeekBadge();
@@ -125,6 +122,18 @@ function initApp() {
   updateProgressStats();
   renderHistory();
   document.getElementById('startDateInput').value = state.startDate;
+  document.getElementById('userNameInput').value = state.userName || 'Boaz Manash';
+
+  // Init sync
+  initSyncUI();
+
+  // Listen for PouchDB changes (from sync) to refresh UI
+  localDB.changes({ since: 'now', live: true }).on('change', async () => {
+    state = await loadFullState();
+    renderHistory();
+    buildDailyChecklist();
+    updateProgressStats();
+  });
 }
 
 // ===== NAVIGATION =====
@@ -140,12 +149,9 @@ function switchTab(tab) {
     document.getElementById('toolsList').style.display = '';
     document.getElementById('toolDetail').style.display = 'none';
   }
-  if (tab === 'history') {
-    renderHistory();
-  }
-  if (tab === 'progress') {
-    updateProgressStats();
-  }
+  if (tab === 'history') renderHistory();
+  if (tab === 'progress') updateProgressStats();
+  if (tab === 'stoic') { renderStoicHistory(); renderWarningHistory(); loadModelOptions(); }
 }
 
 // ===== WEEK CALCULATION =====
@@ -158,7 +164,7 @@ function getCurrentWeek() {
 
 function updateStartDate(val) {
   state.startDate = val;
-  saveState();
+  saveSetting('startDate', val);
   updateWeekBadge();
   buildDailyChecklist();
   updateWeekFocus();
@@ -185,10 +191,12 @@ function updateWeekBadge() {
 function getDailyTasks() {
   const w = getCurrentWeek();
   const tasks = [
+    { id:'stoicmorning', label:'🏛 Stoic Morning Virtues', time:'5-10 min', from:1 },
     { id:'morning', label:'Morning Intention Setting', time:'3-5 min', from:2 },
     { id:'breathing', label:'Extended Exhale Breathing', time:'5-10 min', from:1 },
     { id:'angerlog', label:'Anger Log (if episode)', time:'5-10 min', from:1 },
     { id:'midday', label:'Mid-Day Check-In', time:'2-3 min', from:2 },
+    { id:'stoicevening', label:'🏛 Seneca Evening Reflection', time:'5-10 min', from:1 },
     { id:'evening', label:'Evening Reflection', time:'10-15 min', from:2 },
   ];
   const dow = new Date().getDay();
@@ -231,7 +239,7 @@ function toggleCheck(id) {
   const today = new Date().toISOString().split('T')[0];
   if (!state.dailyChecks[today]) state.dailyChecks[today] = {};
   state.dailyChecks[today][id] = !state.dailyChecks[today][id];
-  saveState();
+  saveDailyCheck(today, state.dailyChecks[today]);
   updateStreak();
   buildDailyChecklist();
 }
@@ -247,7 +255,6 @@ function updateStreak() {
     else if (i > 0) break;
   }
   state.streak = streak;
-  saveState();
 }
 
 function updateWeekFocus() {
@@ -314,7 +321,7 @@ function removeLogPhoto(e) {
   document.getElementById('logPhoto').value = '';
 }
 
-function saveLog(editId) {
+async function doSaveLog(editId) {
   const setting = document.getElementById('logSetting').value.trim();
   const trigger = document.getElementById('logTrigger').value.trim();
   const thought = document.getElementById('logThought').value.trim();
@@ -344,6 +351,10 @@ function saveLog(editId) {
     photo: pendingPhoto || (editId ? state.logs.find(l => l.id === editId)?.photo : null),
   };
 
+  // Save to PouchDB
+  await saveLog(entry);
+
+  // Update in-memory state
   if (editId) {
     const idx = state.logs.findIndex(l => l.id === editId);
     if (idx >= 0) state.logs[idx] = entry;
@@ -351,14 +362,12 @@ function saveLog(editId) {
     state.logs.unshift(entry);
   }
 
-  saveState();
   clearLogForm();
   pendingPhoto = null;
   window._editingLogId = null;
 
-  // Update save button text back
   const saveBtn = document.querySelector('#logForm .btn-primary');
-  if (saveBtn) { saveBtn.textContent = 'Save Log Entry'; saveBtn.setAttribute('onclick', 'saveLog()'); }
+  if (saveBtn) { saveBtn.textContent = 'Save Log Entry'; saveBtn.setAttribute('onclick', 'doSaveLog()'); }
 
   alert(editId ? 'Entry updated.' : 'Log entry saved.');
 }
@@ -417,14 +426,14 @@ function editLog(id) {
   const saveBtn = document.querySelector('#logForm .btn-primary');
   if (saveBtn) {
     saveBtn.textContent = 'Update Entry';
-    saveBtn.setAttribute('onclick', `saveLog(${id})`);
+    saveBtn.setAttribute('onclick', `doSaveLog(${id})`);
   }
 }
 
-function deleteLog(id) {
+async function deleteLog(id) {
   if (!confirm('Delete this log entry?')) return;
+  await deleteLogDoc(id);
   state.logs = state.logs.filter(l => l.id !== id);
-  saveState();
   renderHistory();
 }
 
@@ -540,6 +549,7 @@ function renderLogList() {
       ${l.resolved ? `<div style="margin-top:4px;font-size:0.82rem;color:var(--success)"><strong>Resolved by:</strong> ${esc(l.resolved)}</div>` : ''}
       ${l.betterNext ? `<div style="margin-top:4px;font-size:0.82rem;color:var(--accent)"><strong>Next time:</strong> ${esc(l.betterNext)}</div>` : ''}
       ${l.photo ? `<img src="${l.photo}" class="log-entry-photo" onclick="showFullPhoto('${l.id}')">` : ''}
+      ${buildCognitiveDistancing(l)}
       <div class="log-entry-actions">
         <button class="btn btn-sm btn-secondary" onclick="editLog(${l.id})">✏️ Edit</button>
         <button class="btn btn-sm btn-secondary" onclick="logToCBT(${l.id})">🧠 CBT</button>
@@ -914,7 +924,7 @@ function renderThoughtRecord(el, prefillLog) {
       <div class="intensity-labels"><span>Mild</span><span>Extreme</span></div>
     </div>
 
-    <button class="btn btn-primary btn-full mt-12" onclick="saveThoughtRecord()">Save Thought Record</button>
+    <button class="btn btn-primary btn-full mt-12" onclick="doSaveThoughtRecord()">Save Thought Record</button>
     ${state.thoughtRecords.length ? `<button class="btn btn-secondary btn-full mt-8" onclick="showTRHistory()">View Past Records (${state.thoughtRecords.length})</button>` : ''}`;
 
   // Pre-fill from log if provided
@@ -943,7 +953,7 @@ function fillTRFromLog() {
   colorIntensity(document.getElementById('trIntDisplay'), log.intensity);
 }
 
-function saveThoughtRecord() {
+async function doSaveThoughtRecord() {
   const sit = document.getElementById('trSituation').value.trim();
   const thought = document.getElementById('trThought').value.trim();
   if (!sit || !thought) { alert('Please fill in the situation and thought.'); return; }
@@ -953,7 +963,7 @@ function saveThoughtRecord() {
   const freeDist = document.getElementById('trDistortionFree').value.trim();
   if (freeDist) distortions.push(freeDist);
 
-  state.thoughtRecords.unshift({
+  const tr = {
     id: Date.now(),
     date: new Date().toISOString(),
     situation: sit,
@@ -964,8 +974,10 @@ function saveThoughtRecord() {
     reframe: document.getElementById('trReframe').value.trim(),
     newEmotion: document.getElementById('trNewEmotion').value.trim(),
     newIntensity: parseInt(document.getElementById('trNewIntSlider').value),
-  });
-  saveState();
+  };
+
+  await saveThoughtRecord(tr);
+  state.thoughtRecords.unshift(tr);
   alert('Thought record saved.');
   openTool('thoughtrecord');
 }
@@ -1233,17 +1245,20 @@ function renderMorningRoutine(el) {
     <button class="btn btn-primary btn-full mt-12" onclick="saveMorning()">Save Morning Intention</button>`;
 }
 
-function saveMorning() {
-  state.morningEntries.unshift({
+async function saveMorning() {
+  const m = {
     date: new Date().toISOString(),
     triggers: document.getElementById('morningTriggers').value,
     skill: document.getElementById('morningSkill').value,
     value: document.getElementById('morningValue').value,
-  });
+  };
+  await saveMorningEntry(m);
+  state.morningEntries.unshift(m);
   const today = new Date().toISOString().split('T')[0];
   if (!state.dailyChecks[today]) state.dailyChecks[today] = {};
   state.dailyChecks[today].morning = true;
-  saveState(); buildDailyChecklist();
+  await saveDailyCheck(today, state.dailyChecks[today]);
+  buildDailyChecklist();
   document.getElementById('modalOverlay').classList.remove('active');
 }
 
@@ -1270,19 +1285,22 @@ function renderEveningRoutine(el) {
     <button class="btn btn-primary btn-full mt-12" onclick="saveEvening()">Save Evening Reflection</button>`;
 }
 
-function saveEvening() {
-  state.eveningEntries.unshift({
+async function saveEvening() {
+  const e = {
     date: new Date().toISOString(),
     skill: document.getElementById('eveningSkill').value,
     effective: document.getElementById('eveningEffective').value,
     tomorrow: document.getElementById('eveningTomorrow').value,
     good: document.getElementById('eveningGood').value,
     grateful: document.getElementById('eveningGrateful').value,
-  });
+  };
+  await saveEveningEntry(e);
+  state.eveningEntries.unshift(e);
   const today = new Date().toISOString().split('T')[0];
   if (!state.dailyChecks[today]) state.dailyChecks[today] = {};
   state.dailyChecks[today].evening = true;
-  saveState(); buildDailyChecklist();
+  await saveDailyCheck(today, state.dailyChecks[today]);
+  buildDailyChecklist();
   document.getElementById('modalOverlay').classList.remove('active');
 }
 
@@ -1306,11 +1324,12 @@ function renderMiddayCheckin(el) {
     <button class="btn btn-primary btn-full mt-12" onclick="saveMidday()">Save Check-In</button>`;
 }
 
-function saveMidday() {
+async function saveMidday() {
   const today = new Date().toISOString().split('T')[0];
   if (!state.dailyChecks[today]) state.dailyChecks[today] = {};
   state.dailyChecks[today].midday = true;
-  saveState(); buildDailyChecklist();
+  await saveDailyCheck(today, state.dailyChecks[today]);
+  buildDailyChecklist();
   document.getElementById('modalOverlay').classList.remove('active');
 }
 
@@ -1375,12 +1394,14 @@ function selectScore(metric, val) {
   window._pendingAssessment[metric] = val;
 }
 
-function saveAssessment() {
+async function saveAssessment() {
   if (!window._pendingAssessment || Object.keys(window._pendingAssessment).length === 0) {
     alert('Select at least one score before saving.'); return;
   }
-  state.assessments.unshift({ date: new Date().toISOString(), week: getCurrentWeek(), ...window._pendingAssessment });
-  saveState(); window._pendingAssessment = {};
+  const a = { id: Date.now(), date: new Date().toISOString(), week: getCurrentWeek(), ...window._pendingAssessment };
+  await saveAssessmentDoc(a);
+  state.assessments.unshift(a);
+  window._pendingAssessment = {};
   alert('Weekly assessment saved.');
 }
 
@@ -1399,6 +1420,316 @@ function buildWeekMap() {
       </div>
     </div>`;
   }).join('');
+}
+
+// ===== COGNITIVE DISTANCING =====
+function getUserName() {
+  return state.userName || 'Boaz Manash';
+}
+
+function saveUserName(name) {
+  state.userName = name;
+  saveSetting('userName', name);
+}
+
+function buildCognitiveDistancing(log) {
+  const name = getUserName();
+  const intWord = log.intensity <= 3 ? 'mild' : log.intensity <= 5 ? 'moderate' : log.intensity <= 7 ? 'strong' : 'intense';
+
+  // Third-person rephrase
+  let thirdPerson = `${name} felt ${intWord} anger (${log.intensity}/10)`;
+  if (log.trigger) thirdPerson += ` because ${log.trigger.charAt(0).toLowerCase() + log.trigger.slice(1).replace(/\.$/, '')}`;
+  if (log.thought) thirdPerson += `. ${name}'s first thought was: "${log.thought}"`;
+  if (log.action) thirdPerson += `. As a result, ${name} ${log.action.charAt(0).toLowerCase() + log.action.slice(1).replace(/\.$/, '')}`;
+  if (log.aftermath) thirdPerson += `. Afterward, ${name} ${log.aftermath.charAt(0).toLowerCase() + log.aftermath.slice(1).replace(/\.$/, '')}`;
+  thirdPerson += '.';
+
+  // 20-year perspective
+  let twentyYears = `Looking back 20 years from now, this was a moment when ${name} experienced ${intWord} frustration`;
+  if (log.trigger) twentyYears += ` about ${log.trigger.charAt(0).toLowerCase() + log.trigger.slice(1).replace(/\.$/, '')}`;
+  twentyYears += `. In the larger arc of life, this was a passing storm — one of thousands of small conflicts that shaped who ${name} chose to become.`;
+  if (log.resolved) twentyYears += ` It was resolved when ${name} ${log.resolved.charAt(0).toLowerCase() + log.resolved.slice(1).replace(/\.$/, '')}.`;
+
+  return `<div class="cog-distance">
+    <div class="cog-distance-label">🏛 Third-person view</div>
+    <p>${esc(thirdPerson)}</p>
+  </div>
+  <div class="cog-distance" style="margin-top:6px">
+    <div class="cog-distance-label">🔭 20 years from now</div>
+    <p>${esc(twentyYears)}</p>
+  </div>`;
+}
+
+// ===== STOIC FEATURES =====
+
+async function saveStoicMorning() {
+  const entry = {
+    id: Date.now(),
+    type: 'morning',
+    date: new Date().toISOString(),
+    justice: document.getElementById('virtueJustice').value.trim(),
+    courage: document.getElementById('virtueCourage').value.trim(),
+    temperance: document.getElementById('virtueTemperance').value.trim(),
+    wisdom: document.getElementById('virtueWisdom').value.trim(),
+    negViz: [
+      document.getElementById('negViz1').value.trim(),
+      document.getElementById('negViz2').value.trim(),
+      document.getElementById('negViz3').value.trim(),
+    ].filter(v => v),
+    models: {
+      justice: document.getElementById('modelJustice').value.trim(),
+      courage: document.getElementById('modelCourage').value.trim(),
+      temperance: document.getElementById('modelTemperance').value.trim(),
+      wisdom: document.getElementById('modelWisdom').value.trim(),
+    }
+  };
+
+  // Save models for future use
+  const modelNames = Object.values(entry.models).filter(n => n);
+  for (const name of modelNames) {
+    await dbPut('model', name, { name });
+  }
+
+  await dbPut('stoic', String(entry.id), entry);
+
+  // Mark daily check
+  const today = new Date().toISOString().split('T')[0];
+  if (!state.dailyChecks[today]) state.dailyChecks[today] = {};
+  state.dailyChecks[today].stoicmorning = true;
+  await saveDailyCheck(today, state.dailyChecks[today]);
+  buildDailyChecklist();
+
+  // Clear form
+  ['virtueJustice','virtueCourage','virtueTemperance','virtueWisdom','negViz1','negViz2','negViz3','modelJustice','modelCourage','modelTemperance','modelWisdom'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+
+  alert('Morning practice saved.');
+  renderStoicHistory();
+}
+
+async function saveStoicEvening() {
+  const entry = {
+    id: Date.now(),
+    type: 'evening',
+    date: new Date().toISOString(),
+    well: document.getElementById('senecaWell').value.trim(),
+    avoided: document.getElementById('senecaAvoided').value.trim(),
+    tomorrow: document.getElementById('senecaTomorrow').value.trim(),
+  };
+
+  await dbPut('stoic', String(entry.id), entry);
+
+  const today = new Date().toISOString().split('T')[0];
+  if (!state.dailyChecks[today]) state.dailyChecks[today] = {};
+  state.dailyChecks[today].stoicevening = true;
+  await saveDailyCheck(today, state.dailyChecks[today]);
+  buildDailyChecklist();
+
+  ['senecaWell','senecaAvoided','senecaTomorrow'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+
+  alert('Evening reflection saved.');
+  renderStoicHistory();
+}
+
+async function saveWarningSign() {
+  const entry = {
+    id: Date.now(),
+    type: 'warning',
+    date: new Date().toISOString(),
+    sign: document.getElementById('warningSign').value.trim(),
+    habit: document.getElementById('warningHabit').value.trim(),
+    replacement: document.getElementById('warningReplace').value.trim(),
+  };
+  if (!entry.sign) { alert('Please describe the early warning sign.'); return; }
+
+  await dbPut('stoic', String(entry.id), entry);
+
+  ['warningSign','warningHabit','warningReplace'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+
+  alert('Warning sign saved.');
+  renderWarningHistory();
+}
+
+async function loadModelOptions() {
+  const models = await dbGetAll('model');
+  const datalist = document.getElementById('modelOptions');
+  if (!datalist) return;
+  datalist.innerHTML = models.map(m => `<option value="${esc(m.name)}">`).join('');
+}
+
+async function renderStoicHistory() {
+  const entries = await dbGetAll('stoic');
+  entries.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  const container = document.getElementById('stoicHistory');
+  if (!container) return;
+
+  const journalEntries = entries.filter(e => e.type === 'morning' || e.type === 'evening').slice(0, 20);
+
+  if (journalEntries.length === 0) {
+    container.innerHTML = '<p style="color:var(--text3);font-size:0.85rem;text-align:center">No entries yet. Start with your morning practice above.</p>';
+    return;
+  }
+
+  container.innerHTML = journalEntries.map(e => {
+    const d = new Date(e.date).toLocaleDateString('en-US', { month:'short', day:'numeric', hour:'numeric', minute:'2-digit' });
+
+    if (e.type === 'morning') {
+      const virtues = [
+        e.justice && `⚖️ ${e.justice}`,
+        e.courage && `🦁 ${e.courage}`,
+        e.temperance && `🧘 ${e.temperance}`,
+        e.wisdom && `🦉 ${e.wisdom}`,
+      ].filter(Boolean);
+      const models = Object.entries(e.models || {}).filter(([,v]) => v).map(([k,v]) => `${k}: ${v}`);
+
+      return `<div class="stoic-journal-entry">
+        <div class="stoic-journal-date">${d}</div>
+        <span class="stoic-journal-type morning">Morning</span>
+        ${virtues.length ? `<div style="font-size:0.85rem;color:var(--text2)">${virtues.join('<br>')}</div>` : ''}
+        ${e.negViz?.length ? `<div style="margin-top:6px;font-size:0.82rem;color:var(--text3)"><strong>Prepared for:</strong> ${e.negViz.join('; ')}</div>` : ''}
+        ${models.length ? `<div style="margin-top:4px;font-size:0.82rem;color:var(--text3)"><strong>Models:</strong> ${models.join(', ')}</div>` : ''}
+      </div>`;
+    } else {
+      return `<div class="stoic-journal-entry">
+        <div class="stoic-journal-date">${d}</div>
+        <span class="stoic-journal-type evening">Evening</span>
+        ${e.well ? `<div style="font-size:0.85rem;color:var(--success)"><strong>Well:</strong> ${esc(e.well)}</div>` : ''}
+        ${e.avoided ? `<div style="font-size:0.85rem;color:var(--warm)"><strong>Avoided:</strong> ${esc(e.avoided)}</div>` : ''}
+        ${e.tomorrow ? `<div style="font-size:0.85rem;color:var(--accent)"><strong>Tomorrow:</strong> ${esc(e.tomorrow)}</div>` : ''}
+      </div>`;
+    }
+  }).join('');
+}
+
+async function renderWarningHistory() {
+  const entries = await dbGetAll('stoic');
+  const warnings = entries.filter(e => e.type === 'warning').sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  const container = document.getElementById('warningHistory');
+  if (!container) return;
+
+  if (warnings.length === 0) { container.innerHTML = ''; return; }
+
+  container.innerHTML = '<h4 style="font-size:0.85rem;margin-bottom:8px;color:var(--text2)">Saved Warning Signs</h4>' +
+    warnings.slice(0, 10).map(w => {
+      const d = new Date(w.date).toLocaleDateString('en-US', { month:'short', day:'numeric' });
+      return `<div class="warning-entry">
+        <div style="font-size:0.75rem;color:var(--text3);margin-bottom:4px">${d}</div>
+        ${w.sign ? `<div><span class="we-label">Early sign:</span> <span class="we-text">${esc(w.sign)}</span></div>` : ''}
+        ${w.habit ? `<div><span class="we-label">Old habit:</span> <span class="we-text">${esc(w.habit)}</span></div>` : ''}
+        ${w.replacement ? `<div><span class="we-label">Replacement:</span> <span class="we-text" style="color:var(--success)">${esc(w.replacement)}</span></div>` : ''}
+      </div>`;
+    }).join('');
+}
+
+// ===== SYNC UI =====
+function initSyncUI() {
+  const url = getSyncUrl();
+  const input = document.getElementById('syncUrlInput');
+  if (input) input.value = url;
+  if (url) {
+    startSync(onSyncStatus);
+    updateSyncBadge('connecting');
+  }
+}
+
+function onSyncStatus(status, info) {
+  updateSyncBadge(status);
+}
+
+function updateSyncBadge(status) {
+  const el = document.getElementById('syncStatus');
+  if (!el) return;
+  el.style.display = '';
+  switch(status) {
+    case 'paused':
+      el.textContent = 'Synced';
+      el.className = 'tag tag-green mb-12';
+      break;
+    case 'active':
+    case 'change':
+    case 'connecting':
+      el.textContent = 'Syncing...';
+      el.className = 'tag tag-blue mb-12';
+      break;
+    case 'error':
+      el.textContent = 'Sync error';
+      el.className = 'tag mb-12';
+      el.style.background = 'rgba(239,83,80,0.15)';
+      el.style.color = 'var(--danger)';
+      break;
+    default:
+      el.textContent = 'Not connected';
+      el.className = 'tag tag-warm mb-12';
+  }
+}
+
+async function connectSync() {
+  const url = document.getElementById('syncUrlInput').value.trim();
+  if (!url) { alert('Please enter a Cloudant database URL.'); return; }
+  setSyncUrl(url);
+  updateSyncBadge('connecting');
+  startSync(onSyncStatus);
+}
+
+function disconnectSync() {
+  stopSync();
+  setSyncUrl('');
+  document.getElementById('syncUrlInput').value = '';
+  updateSyncBadge('disconnected');
+}
+
+async function testSyncConnection() {
+  const url = document.getElementById('syncUrlInput').value.trim();
+  if (!url) { alert('Please enter a URL first.'); return; }
+  try {
+    const info = await testSync(url);
+    alert(`Connected! Database: ${info.db_name}\nDocuments: ${info.doc_count}`);
+  } catch (e) {
+    alert(`Connection failed: ${e.message}`);
+  }
+}
+
+// ===== EXPORT / IMPORT =====
+async function doExport() {
+  try {
+    const data = await exportAllData();
+    const json = JSON.stringify(data, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `innercalm-backup-${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  } catch (e) {
+    alert('Export failed: ' + e.message);
+  }
+}
+
+async function doImport(input) {
+  const file = input.files[0];
+  if (!file) return;
+  try {
+    const text = await file.text();
+    const data = JSON.parse(text);
+    const count = await importAllData(data);
+    state = await loadFullState();
+    renderHistory();
+    updateProgressStats();
+    buildDailyChecklist();
+    alert(`Imported ${count} records.`);
+  } catch (e) {
+    alert('Import failed: ' + e.message);
+  }
+  input.value = '';
 }
 
 // ===== HELPERS =====

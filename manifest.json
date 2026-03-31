@@ -1,7 +1,7 @@
 {
-  "name": "Inner Calm - Anger Management",
-  "short_name": "Inner Calm",
-  "description": "12-week self-directed anger management program",
+  "name": "Stoic Sage",
+  "short_name": "Stoic Sage",
+  "description": "Stoic philosophy & anger management companion",
   "start_url": "./",
   "display": "standalone",
   "background_color": "#1a1a2e",

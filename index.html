@@ -6,7 +6,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#1a1a2e">
-  <title>Inner Calm</title>
+  <title>Stoic Sage</title>
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
   <link rel="stylesheet" href="css/style.css">
@@ -15,31 +15,27 @@
 
   <!-- ===== HEADER ===== -->
   <header class="app-header">
-    <h1>Inner Calm</h1>
+    <h1>Stoic Sage</h1>
     <span class="week-badge" id="weekBadge">Week 1</span>
   </header>
 
-  <!-- ===== TODAY VIEW ===== -->
-  <div id="viewToday" class="view active">
+  <!-- ===== HOME VIEW ===== -->
+  <div id="viewHome" class="view active">
     <p class="greeting" id="greeting">Good morning</p>
     <p class="date-display" id="dateDisplay"></p>
 
     <div class="quick-tools">
       <button class="quick-tool" onclick="openTool('breathing')">
-        <span class="qt-icon">🌬</span>
-        <span class="qt-label">Breathe</span>
+        <span class="qt-icon">🌬</span><span class="qt-label">Breathe</span>
       </button>
       <button class="quick-tool" onclick="openTool('grounding')">
-        <span class="qt-icon">🌿</span>
-        <span class="qt-label">Ground</span>
+        <span class="qt-icon">🌿</span><span class="qt-label">Ground</span>
       </button>
       <button class="quick-tool" onclick="switchTab('log')">
-        <span class="qt-icon">📝</span>
-        <span class="qt-label">Log Anger</span>
+        <span class="qt-icon">📝</span><span class="qt-label">Log Anger</span>
       </button>
-      <button class="quick-tool" onclick="openTool('timeout')">
-        <span class="qt-icon">⏸</span>
-        <span class="qt-label">Time-Out</span>
+      <button class="quick-tool" onclick="switchTab('stoic')">
+        <span class="qt-icon">🏛</span><span class="qt-label">Stoic</span>
       </button>
     </div>
 
@@ -49,38 +45,23 @@
     </div>
     <ul class="checklist" id="dailyChecklist"></ul>
 
-    <div class="section-header mt-20">
-      <h2>This Week</h2>
-    </div>
-    <div id="weekFocus" class="card">
-      <p id="weekFocusText"></p>
-    </div>
+    <div class="section-header mt-20"><h2>This Week</h2></div>
+    <div id="weekFocus" class="card"><p id="weekFocusText"></p></div>
   </div>
 
   <!-- ===== LOG VIEW ===== -->
   <div id="viewLog" class="view">
     <div id="logForm">
-      <div class="section-header">
-        <h2>Anger Log</h2>
-      </div>
+      <div class="section-header"><h2>Anger Log</h2></div>
 
-      <div class="form-group">
-        <label>Setting / Context</label>
-        <input type="text" id="logSetting" placeholder="Where were you? Who was there?">
-      </div>
+      <div class="form-group"><label>Setting / Context</label>
+        <input type="text" id="logSetting" placeholder="Where were you? Who was there?"></div>
+      <div class="form-group"><label>Trigger (observable facts only)</label>
+        <textarea id="logTrigger" rows="2" placeholder="What specifically happened?"></textarea></div>
+      <div class="form-group"><label>Initial Thought</label>
+        <textarea id="logThought" rows="2" placeholder='Your first thought: "They always...", "This is..."'></textarea></div>
 
-      <div class="form-group">
-        <label>Trigger (observable facts only)</label>
-        <textarea id="logTrigger" rows="2" placeholder="What specifically happened?"></textarea>
-      </div>
-
-      <div class="form-group">
-        <label>Initial Thought</label>
-        <textarea id="logThought" rows="2" placeholder='Your first thought: "They always...", "This is..."'></textarea>
-      </div>
-
-      <div class="form-group">
-        <label>Body Signals</label>
+      <div class="form-group"><label>Body Signals</label>
         <div class="body-signals" id="bodySignals">
           <button class="body-signal" data-signal="heart-pounding">Heart pounding</button>
           <button class="body-signal" data-signal="face-flushing">Face flushing</button>
@@ -92,67 +73,35 @@
           <button class="body-signal" data-signal="chest-tight">Chest tight</button>
           <button class="body-signal" data-signal="trembling">Trembling</button>
           <button class="body-signal" data-signal="urge-to-move">Urge to move</button>
-        </div>
-      </div>
+        </div></div>
 
-      <div class="form-group">
-        <label>Anger Intensity</label>
+      <div class="form-group"><label>Anger Intensity</label>
         <div class="intensity-display" id="intensityDisplay">5</div>
         <input type="range" id="logIntensity" min="1" max="10" value="5" class="intensity-slider">
-        <div class="intensity-labels">
-          <span>Mild frustration</span>
-          <span>Explosive</span>
-        </div>
-      </div>
+        <div class="intensity-labels"><span>Mild frustration</span><span>Explosive</span></div></div>
 
-      <div class="form-group">
-        <label>Time from trigger to peak anger (seconds)</label>
-        <div class="timing-row">
-          <input type="number" id="logTimeToPeak" min="0" placeholder="e.g. 10">
-          <span class="timing-unit">sec</span>
-        </div>
-      </div>
+      <div class="form-group"><label>Time from trigger to peak anger (seconds)</label>
+        <div class="timing-row"><input type="number" id="logTimeToPeak" min="0" placeholder="e.g. 10"><span class="timing-unit">sec</span></div></div>
+      <div class="form-group"><label>Total duration of anger event</label>
+        <div class="timing-row"><input type="number" id="logDurationMin" min="0" placeholder="min" style="width:80px"><span class="timing-unit">min</span>
+          <input type="number" id="logDurationSec" min="0" max="59" placeholder="sec" style="width:80px"><span class="timing-unit">sec</span></div></div>
 
-      <div class="form-group">
-        <label>Total duration of anger event</label>
-        <div class="timing-row">
-          <input type="number" id="logDurationMin" min="0" placeholder="min" style="width:80px">
-          <span class="timing-unit">min</span>
-          <input type="number" id="logDurationSec" min="0" max="59" placeholder="sec" style="width:80px">
-          <span class="timing-unit">sec</span>
-        </div>
-      </div>
-
-      <div class="form-group">
-        <label>Action Taken</label>
-        <textarea id="logAction" rows="2" placeholder="What did you actually do?"></textarea>
-      </div>
-
-      <div class="form-group">
-        <label>Aftermath (30 min later)</label>
-        <textarea id="logAftermath" rows="2" placeholder="How did you feel? Any consequences?"></textarea>
-      </div>
-
-      <div class="form-group">
-        <label>What resolved it?</label>
-        <textarea id="logResolved" rows="2" placeholder="What finally brought the anger down?"></textarea>
-      </div>
-
-      <div class="form-group">
-        <label>What can I do better next time?</label>
-        <textarea id="logBetterNext" rows="2" placeholder="Skills I could deploy, things I'd change..."></textarea>
-      </div>
-
-      <div class="form-group">
-        <label>Selfie (optional)</label>
+      <div class="form-group"><label>Action Taken</label>
+        <textarea id="logAction" rows="2" placeholder="What did you actually do?"></textarea></div>
+      <div class="form-group"><label>Aftermath (30 min later)</label>
+        <textarea id="logAftermath" rows="2" placeholder="How did you feel? Any consequences?"></textarea></div>
+      <div class="form-group"><label>What resolved it?</label>
+        <textarea id="logResolved" rows="2" placeholder="What finally brought the anger down?"></textarea></div>
+      <div class="form-group"><label>What can I do better next time?</label>
+        <textarea id="logBetterNext" rows="2" placeholder="Skills I could deploy, things I'd change..."></textarea></div>
+      <div class="form-group"><label>Selfie (optional)</label>
         <div class="photo-upload" id="logPhotoUpload">
           <input type="file" accept="image/*" capture="user" id="logPhoto" onchange="previewLogPhoto(this)" style="display:none">
           <button class="btn btn-secondary btn-sm" onclick="document.getElementById('logPhoto').click()">📷 Take / Upload Photo</button>
           <div id="logPhotoPreview"></div>
-        </div>
-      </div>
+        </div></div>
 
-      <button class="btn btn-primary btn-full mt-8" onclick="saveLog()">Save Log Entry</button>
+      <button class="btn btn-primary btn-full mt-8" onclick="doSaveLog()">Save Log Entry</button>
     </div>
   </div>
 
@@ -162,267 +111,221 @@
       <h2>History</h2>
       <span class="tag tag-blue" id="logCount">0 entries</span>
     </div>
-
-    <!-- Graphs Section -->
     <div id="historyGraphs">
       <div class="card">
         <div class="card-header"><h3>30-Day Heatmap</h3></div>
         <div id="calendarHeatmap" class="calendar-heatmap"></div>
-        <div class="heatmap-legend">
-          <span>None</span>
+        <div class="heatmap-legend"><span>None</span>
           <div class="heatmap-swatch" style="background:var(--surface3)"></div>
           <div class="heatmap-swatch" style="background:#66bb6a"></div>
           <div class="heatmap-swatch" style="background:#ffb74d"></div>
           <div class="heatmap-swatch" style="background:#ff8a65"></div>
           <div class="heatmap-swatch" style="background:#ef5350"></div>
-          <span>10</span>
+          <span>10</span></div>
+      </div>
+      <div class="card"><div class="card-header"><h3>Time of Day</h3></div><div id="todChart" class="tod-chart"></div></div>
+      <div class="card"><div class="card-header"><h3>Intensity Trend</h3></div><div class="chart-bars" id="intensityChart" style="height:120px"></div></div>
+    </div>
+    <h3 class="mt-16 mb-12">All Entries</h3>
+    <div id="logList"></div>
+  </div>
+
+  <!-- ===== STOIC VIEW ===== -->
+  <div id="viewStoic" class="view">
+    <h2 class="mb-16">🏛 Stoic Practice</h2>
+
+    <!-- Morning Virtues -->
+    <div class="card stoic-card">
+      <div class="card-header"><span class="card-icon">🌅</span><h3>Morning Virtues</h3></div>
+      <p class="mb-12" style="font-size:0.85rem;color:var(--text2)">Set your intention for each cardinal virtue today.</p>
+
+      <div class="virtue-row">
+        <div class="virtue-icon">⚖️</div>
+        <div class="virtue-body">
+          <div class="virtue-name">Justice <span class="virtue-sub">— fairness, duty to others</span></div>
+          <textarea id="virtueJustice" rows="2" placeholder="What will I do today that is fair and serves others?"></textarea>
         </div>
       </div>
-
-      <div class="card">
-        <div class="card-header"><h3>Time of Day</h3></div>
-        <div id="todChart" class="tod-chart"></div>
+      <div class="virtue-row">
+        <div class="virtue-icon">🦁</div>
+        <div class="virtue-body">
+          <div class="virtue-name">Courage <span class="virtue-sub">— doing right despite fear</span></div>
+          <textarea id="virtueCourage" rows="2" placeholder="What right thing will I do despite difficulty or fear?"></textarea>
+        </div>
       </div>
-
-      <div class="card">
-        <div class="card-header"><h3>Intensity Trend</h3></div>
-        <div class="chart-bars" id="intensityChart" style="height:120px"></div>
+      <div class="virtue-row">
+        <div class="virtue-icon">🧘</div>
+        <div class="virtue-body">
+          <div class="virtue-name">Temperance <span class="virtue-sub">— self-control, moderation</span></div>
+          <textarea id="virtueTemperance" rows="2" placeholder="Where will I practice self-control today?"></textarea>
+        </div>
+      </div>
+      <div class="virtue-row">
+        <div class="virtue-icon">🦉</div>
+        <div class="virtue-body">
+          <div class="virtue-name">Wisdom <span class="virtue-sub">— seeing clearly, choosing well</span></div>
+          <textarea id="virtueWisdom" rows="2" placeholder="What situation requires me to see clearly and choose well?"></textarea>
+        </div>
       </div>
     </div>
 
-    <!-- Log Entries List -->
-    <h3 class="mt-16 mb-12">All Entries</h3>
-    <div id="logList"></div>
+    <!-- Negative Visualization -->
+    <div class="card stoic-card">
+      <div class="card-header"><span class="card-icon">🌑</span><h3>Negative Visualization</h3></div>
+      <p class="mb-12" style="font-size:0.85rem;color:var(--text2)"><em>Premeditatio malorum</em> — Mentally prepare for adversity so you respond with equanimity rather than shock.</p>
+      <div class="form-group"><label>1. Something bad that might happen today</label>
+        <textarea id="negViz1" rows="1" placeholder="The meeting might go poorly..."></textarea></div>
+      <div class="form-group"><label>2. Another thing that might go wrong</label>
+        <textarea id="negViz2" rows="1" placeholder="I might not finish the deadline..."></textarea></div>
+      <div class="form-group"><label>3. A third possibility</label>
+        <textarea id="negViz3" rows="1" placeholder="Someone might criticize my work..."></textarea></div>
+    </div>
+
+    <!-- Role Models -->
+    <div class="card stoic-card">
+      <div class="card-header"><span class="card-icon">🗿</span><h3>Role Modeling</h3></div>
+      <p class="mb-12" style="font-size:0.85rem;color:var(--text2)">Choose a model or mentor for each virtue — someone who embodies it. Ask: "What would they do?"</p>
+      <div class="form-group"><label>⚖️ Justice model</label>
+        <input type="text" id="modelJustice" list="modelOptions" placeholder="Who embodies fairness?"></div>
+      <div class="form-group"><label>🦁 Courage model</label>
+        <input type="text" id="modelCourage" list="modelOptions" placeholder="Who embodies courage?"></div>
+      <div class="form-group"><label>🧘 Temperance model</label>
+        <input type="text" id="modelTemperance" list="modelOptions" placeholder="Who embodies self-control?"></div>
+      <div class="form-group"><label>🦉 Wisdom model</label>
+        <input type="text" id="modelWisdom" list="modelOptions" placeholder="Who embodies wisdom?"></div>
+      <datalist id="modelOptions"></datalist>
+    </div>
+
+    <button class="btn btn-primary btn-full mt-8 mb-16" onclick="saveStoicMorning()">Save Morning Practice</button>
+
+    <!-- Evening Reflection (Seneca) -->
+    <div class="card stoic-card">
+      <div class="card-header"><span class="card-icon">🌙</span><h3>Evening Reflection (Seneca)</h3></div>
+      <p class="mb-12" style="font-size:0.85rem;color:var(--text2)">"I examine my entire day and go back over what I've done and said." — Seneca, <em>On Anger</em></p>
+      <div class="form-group"><label>What did I do well today?</label>
+        <textarea id="senecaWell" rows="2" placeholder="Where did I act with virtue?"></textarea></div>
+      <div class="form-group"><label>Where did I avoid what I should have done?</label>
+        <textarea id="senecaAvoided" rows="2" placeholder="What discomfort did I dodge? What duty did I skip?"></textarea></div>
+      <div class="form-group"><label>What will I do differently tomorrow?</label>
+        <textarea id="senecaTomorrow" rows="2" placeholder="One specific change..."></textarea></div>
+      <button class="btn btn-primary btn-full mt-8" onclick="saveStoicEvening()">Save Evening Reflection</button>
+    </div>
+
+    <!-- Early Warning Signs -->
+    <div class="card stoic-card mt-16">
+      <div class="card-header"><span class="card-icon">⚠️</span><h3>Early Warning Signs & Habits</h3></div>
+      <p class="mb-12" style="font-size:0.85rem;color:var(--text2)">Identify patterns before they escalate. Spot the early sign, plan the replacement.</p>
+      <div class="form-group"><label>What did I see coming? (early sign)</label>
+        <textarea id="warningSign" rows="2" placeholder="I noticed my jaw tightening before the argument..."></textarea></div>
+      <div class="form-group"><label>The habitual reaction I want to replace</label>
+        <textarea id="warningHabit" rows="2" placeholder="I usually raise my voice when..."></textarea></div>
+      <div class="form-group"><label>The replacement behavior</label>
+        <textarea id="warningReplace" rows="2" placeholder="Instead, I will take 3 breaths and..."></textarea></div>
+      <button class="btn btn-secondary btn-full mt-8" onclick="saveWarningSign()">Save Warning Sign</button>
+      <div id="warningHistory" class="mt-12"></div>
+    </div>
+
+    <!-- Stoic Journal History -->
+    <div class="card stoic-card mt-16">
+      <div class="card-header"><span class="card-icon">📜</span><h3>Journal History</h3></div>
+      <div id="stoicHistory"></div>
+    </div>
   </div>
 
   <!-- ===== TOOLS VIEW ===== -->
   <div id="viewTools" class="view">
     <div id="toolsList">
       <h2 class="mb-16">Calming Tools</h2>
-
-      <div class="tool-card" onclick="openTool('breathing')">
-        <div class="tool-card-top">
-          <span class="tool-emoji">🌬</span>
-          <h3>Extended Exhale Breathing</h3>
-          <span class="tool-time">5-10 min</span>
-        </div>
-        <p>4-count inhale, 1-2 hold, 6-8 exhale. Activates your parasympathetic nervous system.</p>
-      </div>
-
-      <div class="tool-card" onclick="openTool('grounding')">
-        <div class="tool-card-top">
-          <span class="tool-emoji">🌿</span>
-          <h3>5-4-3-2-1 Grounding</h3>
-          <span class="tool-time">60 sec</span>
-        </div>
-        <p>Redirect attention to sensory input. Interrupts the amygdala cascade in real time.</p>
-      </div>
-
-      <div class="tool-card" onclick="openTool('pmr')">
-        <div class="tool-card-top">
-          <span class="tool-emoji">💪</span>
-          <h3>Progressive Muscle Relaxation</h3>
-          <span class="tool-time">15 min</span>
-        </div>
-        <p>Tense and release 11 muscle groups. Lowers baseline arousal so triggers produce smaller spikes.</p>
-      </div>
-
-      <div class="tool-card" onclick="openTool('timeout')">
-        <div class="tool-card-top">
-          <span class="tool-emoji">⏸</span>
-          <h3>Structured Time-Out</h3>
-          <span class="tool-time">8-10 min</span>
-        </div>
-        <p>5-step structured time-out: Notice, Signal, Move, Regulate, Return.</p>
-      </div>
-
-      <div class="tool-card" onclick="openTool('feetfloor')">
-        <div class="tool-card-top">
-          <span class="tool-emoji">🦶</span>
-          <h3>Feet on the Floor Reset</h3>
-          <span class="tool-time">30 sec</span>
-        </div>
-        <p>Press feet into the ground, breathe out slowly. Instant physical grounding before responding.</p>
-      </div>
+      <div class="tool-card" onclick="openTool('breathing')"><div class="tool-card-top"><span class="tool-emoji">🌬</span><h3>Extended Exhale Breathing</h3><span class="tool-time">5-10 min</span></div><p>4-count inhale, 1-2 hold, 6-8 exhale. Activates your parasympathetic nervous system.</p></div>
+      <div class="tool-card" onclick="openTool('grounding')"><div class="tool-card-top"><span class="tool-emoji">🌿</span><h3>5-4-3-2-1 Grounding</h3><span class="tool-time">60 sec</span></div><p>Redirect attention to sensory input. Interrupts the amygdala cascade in real time.</p></div>
+      <div class="tool-card" onclick="openTool('pmr')"><div class="tool-card-top"><span class="tool-emoji">💪</span><h3>Progressive Muscle Relaxation</h3><span class="tool-time">15 min</span></div><p>Tense and release 11 muscle groups. Lowers baseline arousal so triggers produce smaller spikes.</p></div>
+      <div class="tool-card" onclick="openTool('timeout')"><div class="tool-card-top"><span class="tool-emoji">⏸</span><h3>Structured Time-Out</h3><span class="tool-time">8-10 min</span></div><p>5-step structured time-out: Notice, Signal, Move, Regulate, Return.</p></div>
+      <div class="tool-card" onclick="openTool('feetfloor')"><div class="tool-card-top"><span class="tool-emoji">🦶</span><h3>Feet on the Floor Reset</h3><span class="tool-time">30 sec</span></div><p>Press feet into the ground, breathe out slowly. Instant physical grounding.</p></div>
 
       <h2 class="mt-20 mb-16">Cognitive Tools</h2>
-
-      <div class="tool-card" onclick="openTool('thoughtrecord')">
-        <div class="tool-card-top">
-          <span class="tool-emoji">🧠</span>
-          <h3>CBT Thought Record</h3>
-          <span class="tool-time">15-20 min</span>
-        </div>
-        <p>6-column thought record. Identify distortions and reframe automatic thoughts.</p>
-      </div>
-
-      <div class="tool-card" onclick="openTool('oppositeaction')">
-        <div class="tool-card-top">
-          <span class="tool-emoji">🔄</span>
-          <h3>DBT Opposite Action</h3>
-          <span class="tool-time">5 min</span>
-        </div>
-        <p>Act opposite to the anger urge. Reduces the emotion's intensity and duration.</p>
-      </div>
-
-      <div class="tool-card" onclick="openTool('defusion')">
-        <div class="tool-card-top">
-          <span class="tool-emoji">☁️</span>
-          <h3>ACT Defusion & Acceptance</h3>
-          <span class="tool-time">10-15 min</span>
-        </div>
-        <p>Create psychological distance from angry thoughts. Observe them rather than be dominated.</p>
-      </div>
-
-      <div class="tool-card" onclick="openTool('dearman')">
-        <div class="tool-card-top">
-          <span class="tool-emoji">🗣</span>
-          <h3>DEAR MAN Communication</h3>
-          <span class="tool-time">15 min</span>
-        </div>
-        <p>Express needs assertively without attacking or withdrawing. Script difficult conversations.</p>
-      </div>
-
-      <div class="tool-card" onclick="openTool('selfcompassion')">
-        <div class="tool-card-top">
-          <span class="tool-emoji">💛</span>
-          <h3>Self-Compassion</h3>
-          <span class="tool-time">3 min</span>
-        </div>
-        <p>After an episode you're disappointed with. Not self-indulgence — a neurological calming act.</p>
-      </div>
+      <div class="tool-card" onclick="openTool('thoughtrecord')"><div class="tool-card-top"><span class="tool-emoji">🧠</span><h3>CBT Thought Record</h3><span class="tool-time">15-20 min</span></div><p>6-column thought record. Identify distortions and reframe automatic thoughts.</p></div>
+      <div class="tool-card" onclick="openTool('oppositeaction')"><div class="tool-card-top"><span class="tool-emoji">🔄</span><h3>DBT Opposite Action</h3><span class="tool-time">5 min</span></div><p>Act opposite to the anger urge. Reduces the emotion's intensity and duration.</p></div>
+      <div class="tool-card" onclick="openTool('defusion')"><div class="tool-card-top"><span class="tool-emoji">☁️</span><h3>ACT Defusion & Acceptance</h3><span class="tool-time">10-15 min</span></div><p>Create psychological distance from angry thoughts. Observe rather than be dominated.</p></div>
+      <div class="tool-card" onclick="openTool('dearman')"><div class="tool-card-top"><span class="tool-emoji">🗣</span><h3>DEAR MAN Communication</h3><span class="tool-time">15 min</span></div><p>Express needs assertively without attacking or withdrawing.</p></div>
+      <div class="tool-card" onclick="openTool('selfcompassion')"><div class="tool-card-top"><span class="tool-emoji">💛</span><h3>Self-Compassion</h3><span class="tool-time">3 min</span></div><p>After an episode you're disappointed with. A neurological calming act.</p></div>
 
       <h2 class="mt-20 mb-16">Daily Routines</h2>
-
-      <div class="tool-card" onclick="openRoutine('morning')">
-        <div class="tool-card-top">
-          <span class="tool-emoji">🌅</span>
-          <h3>Morning Intention</h3>
-          <span class="tool-time">10-15 min</span>
-        </div>
-        <p>Set your intention, identify triggers, name the skill you'll deploy today.</p>
-      </div>
-
-      <div class="tool-card" onclick="openRoutine('evening')">
-        <div class="tool-card-top">
-          <span class="tool-emoji">🌙</span>
-          <h3>Evening Reflection</h3>
-          <span class="tool-time">10-15 min</span>
-        </div>
-        <p>Log episodes, review skill usage, emotional reset, gratitude.</p>
-      </div>
-
-      <div class="tool-card" onclick="openRoutine('midday')">
-        <div class="tool-card-top">
-          <span class="tool-emoji">☀️</span>
-          <h3>Mid-Day Check-In</h3>
-          <span class="tool-time">2-3 min</span>
-        </div>
-        <p>Quick internal scan: anger level, body tension, rumination.</p>
-      </div>
-
-      <div class="tool-card" onclick="openRoutine('weeklyreview')">
-        <div class="tool-card-top">
-          <span class="tool-emoji">📊</span>
-          <h3>Weekly Pattern Review</h3>
-          <span class="tool-time">15-20 min</span>
-        </div>
-        <p>Identify top triggers, earliest body signals, common distortions, intensity trend.</p>
-      </div>
+      <div class="tool-card" onclick="openRoutine('morning')"><div class="tool-card-top"><span class="tool-emoji">🌅</span><h3>Morning Intention</h3><span class="tool-time">10-15 min</span></div><p>Set your intention, identify triggers, name the skill you'll deploy today.</p></div>
+      <div class="tool-card" onclick="openRoutine('evening')"><div class="tool-card-top"><span class="tool-emoji">🌙</span><h3>Evening Reflection</h3><span class="tool-time">10-15 min</span></div><p>Log episodes, review skill usage, emotional reset, gratitude.</p></div>
+      <div class="tool-card" onclick="openRoutine('midday')"><div class="tool-card-top"><span class="tool-emoji">☀️</span><h3>Mid-Day Check-In</h3><span class="tool-time">2-3 min</span></div><p>Quick internal scan: anger level, body tension, rumination.</p></div>
+      <div class="tool-card" onclick="openRoutine('weeklyreview')"><div class="tool-card-top"><span class="tool-emoji">📊</span><h3>Weekly Pattern Review</h3><span class="tool-time">15-20 min</span></div><p>Identify top triggers, earliest body signals, intensity trend.</p></div>
     </div>
-
-    <!-- Tool sub-views rendered by JS -->
     <div id="toolDetail" style="display:none"></div>
   </div>
 
   <!-- ===== PROGRESS VIEW ===== -->
   <div id="viewProgress" class="view">
     <h2 class="mb-16">Your Progress</h2>
-
-    <div class="stat-grid" id="statGrid">
-      <div class="stat-card">
-        <div class="stat-value" id="statEntries">0</div>
-        <div class="stat-label">Log Entries</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value" id="statAvgIntensity">--</div>
-        <div class="stat-label">Avg Intensity</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value" id="statCurrentWeek">1</div>
-        <div class="stat-label">Current Week</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value" id="statStreak">0</div>
-        <div class="stat-label">Day Streak</div>
-      </div>
+    <div class="stat-grid">
+      <div class="stat-card"><div class="stat-value" id="statEntries">0</div><div class="stat-label">Log Entries</div></div>
+      <div class="stat-card"><div class="stat-value" id="statAvgIntensity">--</div><div class="stat-label">Avg Intensity</div></div>
+      <div class="stat-card"><div class="stat-value" id="statCurrentWeek">1</div><div class="stat-label">Current Week</div></div>
+      <div class="stat-card"><div class="stat-value" id="statStreak">0</div><div class="stat-label">Day Streak</div></div>
     </div>
 
-    <div class="section-header mt-16">
-      <h2>Weekly Self-Assessment</h2>
-      <button class="btn btn-sm btn-primary" onclick="saveAssessment()">Save</button>
-    </div>
-
-    <div class="assessment-row">
-      <span class="assessment-label">Avg daily anger intensity</span>
-      <div class="assessment-score" data-metric="avgAnger" id="scoreAvgAnger"></div>
-    </div>
-    <div class="assessment-row">
-      <span class="assessment-label">Episodes per week</span>
-      <div class="assessment-score" data-metric="episodes" id="scoreEpisodes"></div>
-    </div>
-    <div class="assessment-row">
-      <span class="assessment-label">Recovery time</span>
-      <div class="assessment-score" data-metric="recovery" id="scoreRecovery"></div>
-    </div>
-    <div class="assessment-row">
-      <span class="assessment-label">Skill use rate</span>
-      <div class="assessment-score" data-metric="skillUse" id="scoreSkillUse"></div>
-    </div>
-    <div class="assessment-row">
-      <span class="assessment-label">Satisfaction w/ handling</span>
-      <div class="assessment-score" data-metric="satisfaction" id="scoreSatisfaction"></div>
-    </div>
+    <div class="section-header mt-16"><h2>Weekly Self-Assessment</h2><button class="btn btn-sm btn-primary" onclick="saveAssessment()">Save</button></div>
+    <div class="assessment-row"><span class="assessment-label">Avg daily anger</span><div class="assessment-score" data-metric="avgAnger" id="scoreAvgAnger"></div></div>
+    <div class="assessment-row"><span class="assessment-label">Episodes/week</span><div class="assessment-score" data-metric="episodes" id="scoreEpisodes"></div></div>
+    <div class="assessment-row"><span class="assessment-label">Recovery time</span><div class="assessment-score" data-metric="recovery" id="scoreRecovery"></div></div>
+    <div class="assessment-row"><span class="assessment-label">Skill use rate</span><div class="assessment-score" data-metric="skillUse" id="scoreSkillUse"></div></div>
+    <div class="assessment-row"><span class="assessment-label">Satisfaction</span><div class="assessment-score" data-metric="satisfaction" id="scoreSatisfaction"></div></div>
 
     <h2 class="mt-20 mb-12">12-Week Program Map</h2>
     <div id="weekMap"></div>
 
     <div class="card mt-16">
-      <div class="card-header">
-        <span class="card-icon">⚙️</span>
-        <h3>Settings</h3>
+      <div class="card-header"><span class="card-icon">⚙️</span><h3>Settings</h3></div>
+      <div class="form-group"><label>Your Name (for cognitive distancing)</label>
+        <input type="text" id="userNameInput" placeholder="Boaz Manash" onchange="saveUserName(this.value)"></div>
+      <div class="form-group"><label>Program Start Date</label>
+        <input type="date" id="startDateInput" onchange="updateStartDate(this.value)"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><span class="card-icon">🔄</span><h3>Sync (Cloudant)</h3></div>
+      <div id="syncStatus" class="tag tag-warm mb-12" style="display:none">Not connected</div>
+      <div class="form-group"><label>Cloudant Database URL</label>
+        <input type="url" id="syncUrlInput" placeholder="https://user:pass@host.cloudantnosqldb.appdomain.cloud/stoicsage"></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-primary btn-sm" onclick="connectSync()">Connect</button>
+        <button class="btn btn-secondary btn-sm" onclick="disconnectSync()">Disconnect</button>
+        <button class="btn btn-secondary btn-sm" onclick="testSyncConnection()">Test</button>
       </div>
-      <div class="form-group">
-        <label>Program Start Date</label>
-        <input type="date" id="startDateInput" onchange="updateStartDate(this.value)">
+    </div>
+
+    <div class="card">
+      <div class="card-header"><span class="card-icon">💾</span><h3>Backup</h3></div>
+      <p style="font-size:0.85rem;color:var(--text2);margin-bottom:12px">Export all data as JSON, or restore from a backup.</p>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-secondary btn-sm" onclick="doExport()">Export JSON</button>
+        <button class="btn btn-secondary btn-sm" onclick="document.getElementById('importFile').click()">Import JSON</button>
+        <input type="file" id="importFile" accept=".json" style="display:none" onchange="doImport(this)">
       </div>
     </div>
   </div>
 
-  <!-- ===== MODAL (for routines & editing) ===== -->
+  <!-- ===== MODAL ===== -->
   <div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
     <div class="modal" id="modalContent" onclick="event.stopPropagation()"></div>
   </div>
 
-  <!-- ===== TAB BAR ===== -->
+  <!-- ===== TAB BAR (6 tabs) ===== -->
   <nav class="tab-bar">
-    <button class="active" data-tab="today" onclick="switchTab('today')">
-      <span class="tab-icon">🏠</span>Today
-    </button>
-    <button data-tab="log" onclick="switchTab('log')">
-      <span class="tab-icon">📝</span>Log
-    </button>
-    <button data-tab="history" onclick="switchTab('history')">
-      <span class="tab-icon">📊</span>History
-    </button>
-    <button data-tab="tools" onclick="switchTab('tools')">
-      <span class="tab-icon">🧘</span>Tools
-    </button>
-    <button data-tab="progress" onclick="switchTab('progress')">
-      <span class="tab-icon">📈</span>Progress
-    </button>
+    <button class="active" data-tab="home" onclick="switchTab('home')"><span class="tab-icon">🏠</span>Home</button>
+    <button data-tab="log" onclick="switchTab('log')"><span class="tab-icon">📝</span>Log</button>
+    <button data-tab="history" onclick="switchTab('history')"><span class="tab-icon">📊</span>History</button>
+    <button data-tab="stoic" onclick="switchTab('stoic')"><span class="tab-icon">🏛</span>Stoic</button>
+    <button data-tab="tools" onclick="switchTab('tools')"><span class="tab-icon">🧘</span>Tools</button>
+    <button data-tab="progress" onclick="switchTab('progress')"><span class="tab-icon">📈</span>More</button>
   </nav>
 
+  <script src="https://cdn.jsdelivr.net/npm/pouchdb@9.0.0/dist/pouchdb.min.js"></script>
+  <script src="js/db.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>
