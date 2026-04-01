@@ -1,4 +1,4 @@
-const CACHE_NAME = 'stoicsage-v1';
+const CACHE_NAME = 'stoicsage-v2';
 const ASSETS = [
   './',
   './index.html',

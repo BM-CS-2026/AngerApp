@@ -45,8 +45,8 @@
     </div>
     <ul class="checklist" id="dailyChecklist"></ul>
 
-    <div class="section-header mt-20"><h2>This Week</h2></div>
-    <div id="weekFocus" class="card"><p id="weekFocusText"></p></div>
+    <div class="section-header mt-20"><h2>🏛 Today's Virtues</h2></div>
+    <div id="todayVirtues" class="card"><p style="color:var(--text3)">Complete your morning practice in the Stoic tab.</p></div>
   </div>
 
   <!-- ===== LOG VIEW ===== -->
@@ -123,7 +123,6 @@
           <div class="heatmap-swatch" style="background:#ef5350"></div>
           <span>10</span></div>
       </div>
-      <div class="card"><div class="card-header"><h3>Time of Day</h3></div><div id="todChart" class="tod-chart"></div></div>
       <div class="card"><div class="card-header"><h3>Intensity Trend</h3></div><div class="chart-bars" id="intensityChart" style="height:120px"></div></div>
     </div>
     <h3 class="mt-16 mb-12">All Entries</h3>
@@ -179,6 +178,23 @@
         <textarea id="negViz2" rows="1" placeholder="I might not finish the deadline..."></textarea></div>
       <div class="form-group"><label>3. A third possibility</label>
         <textarea id="negViz3" rows="1" placeholder="Someone might criticize my work..."></textarea></div>
+    </div>
+
+    <!-- Marcus Aurelius Reminder -->
+    <div class="card stoic-card">
+      <div class="card-header"><span class="card-icon">🏛</span><h3>Marcus Aurelius — Daily Reminder</h3></div>
+      <blockquote style="font-style:italic;color:var(--text2);line-height:1.6;border-left:3px solid #b8860b;padding-left:14px;margin-bottom:14px">
+        "I shall meet with the busy-body, the ungrateful, arrogant, deceitful, envious, unsocial. I can neither be injured by any of them, nor can I change them."
+      </blockquote>
+      <p class="mb-12" style="font-size:0.85rem;color:var(--text3)">Who might you encounter today? Write their names — not to judge, but to prepare yourself with equanimity.</p>
+      <div class="form-group"><label>People I may encounter today</label>
+        <textarea id="marcusNames1" rows="1" placeholder="Name or description..."></textarea></div>
+      <div class="form-group">
+        <textarea id="marcusNames2" rows="1" placeholder="Another person..."></textarea></div>
+      <div class="form-group">
+        <textarea id="marcusNames3" rows="1" placeholder="Another person..."></textarea></div>
+      <div class="form-group">
+        <textarea id="marcusNames4" rows="1" placeholder="Another person..."></textarea></div>
     </div>
 
     <!-- Role Models -->
@@ -269,11 +285,21 @@
     </div>
 
     <div class="section-header mt-16"><h2>Weekly Self-Assessment</h2><button class="btn btn-sm btn-primary" onclick="saveAssessment()">Save</button></div>
-    <div class="assessment-row"><span class="assessment-label">Avg daily anger</span><div class="assessment-score" data-metric="avgAnger" id="scoreAvgAnger"></div></div>
-    <div class="assessment-row"><span class="assessment-label">Episodes/week</span><div class="assessment-score" data-metric="episodes" id="scoreEpisodes"></div></div>
-    <div class="assessment-row"><span class="assessment-label">Recovery time</span><div class="assessment-score" data-metric="recovery" id="scoreRecovery"></div></div>
-    <div class="assessment-row"><span class="assessment-label">Skill use rate</span><div class="assessment-score" data-metric="skillUse" id="scoreSkillUse"></div></div>
-    <div class="assessment-row"><span class="assessment-label">Satisfaction</span><div class="assessment-score" data-metric="satisfaction" id="scoreSatisfaction"></div></div>
+    <div class="form-group"><label>Avg daily anger intensity</label>
+      <div class="intensity-display assess-val" id="valAvgAnger">5</div>
+      <input type="range" min="1" max="10" value="5" class="intensity-slider" data-metric="avgAnger" oninput="updateAssessSlider(this)"></div>
+    <div class="form-group"><label>Episodes per week</label>
+      <div class="intensity-display assess-val" id="valEpisodes">5</div>
+      <input type="range" min="1" max="10" value="5" class="intensity-slider" data-metric="episodes" oninput="updateAssessSlider(this)"></div>
+    <div class="form-group"><label>Recovery time</label>
+      <div class="intensity-display assess-val" id="valRecovery">5</div>
+      <input type="range" min="1" max="10" value="5" class="intensity-slider" data-metric="recovery" oninput="updateAssessSlider(this)"></div>
+    <div class="form-group"><label>Skill use rate</label>
+      <div class="intensity-display assess-val" id="valSkillUse">5</div>
+      <input type="range" min="1" max="10" value="5" class="intensity-slider" data-metric="skillUse" oninput="updateAssessSlider(this)"></div>
+    <div class="form-group"><label>Satisfaction with handling</label>
+      <div class="intensity-display assess-val" id="valSatisfaction">5</div>
+      <input type="range" min="1" max="10" value="5" class="intensity-slider" data-metric="satisfaction" oninput="updateAssessSlider(this)"></div>
 
     <h2 class="mt-20 mb-12">12-Week Program Map</h2>
     <div id="weekMap"></div>

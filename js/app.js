@@ -114,7 +114,7 @@ async function initApp() {
   updateDateDisplay();
   updateWeekBadge();
   buildDailyChecklist();
-  updateWeekFocus();
+  showTodayVirtues();
   initBodySignals();
   initIntensitySlider();
   buildScoreDots();
@@ -151,7 +151,7 @@ function switchTab(tab) {
   }
   if (tab === 'history') renderHistory();
   if (tab === 'progress') updateProgressStats();
-  if (tab === 'stoic') { renderStoicHistory(); renderWarningHistory(); loadModelOptions(); }
+  if (tab === 'stoic') { loadTodayStoicData(); renderStoicHistory(); renderWarningHistory(); loadModelOptions(); }
 }
 
 // ===== WEEK CALCULATION =====
@@ -193,7 +193,6 @@ function getDailyTasks() {
   const tasks = [
     { id:'stoicmorning', label:'🏛 Stoic Morning Virtues', time:'5-10 min', from:1 },
     { id:'morning', label:'Morning Intention Setting', time:'3-5 min', from:2 },
-    { id:'breathing', label:'Extended Exhale Breathing', time:'5-10 min', from:1 },
     { id:'angerlog', label:'Anger Log (if episode)', time:'5-10 min', from:1 },
     { id:'midday', label:'Mid-Day Check-In', time:'2-3 min', from:2 },
     { id:'stoicevening', label:'🏛 Seneca Evening Reflection', time:'5-10 min', from:1 },
@@ -258,9 +257,37 @@ function updateStreak() {
 }
 
 function updateWeekFocus() {
-  const plan = WEEK_PLAN[getCurrentWeek() - 1];
-  document.getElementById('weekFocusText').innerHTML =
-    `<strong>Focus:</strong> ${plan.focus}<br><span style="color:var(--text2);font-size:0.85rem">New skills: ${plan.skills}</span>`;
+  // no longer used for week focus - now shows today's virtues
+}
+
+async function showTodayVirtues() {
+  const container = document.getElementById('todayVirtues');
+  const today = new Date().toISOString().split('T')[0];
+  const allStoic = await dbGetAll('stoic');
+  const todayMorning = allStoic
+    .filter(e => e.type === 'morning' && e.date && e.date.startsWith(today))
+    .sort((a, b) => (b.date || '').localeCompare(a.date || ''))[0];
+
+  if (!todayMorning) {
+    container.innerHTML = '<p style="color:var(--text3)">Complete your morning practice in the Stoic tab.</p>';
+    return;
+  }
+
+  const virtues = [
+    todayMorning.justice && `<div style="margin-bottom:6px">⚖️ <strong>Justice:</strong> ${esc(todayMorning.justice)}</div>`,
+    todayMorning.courage && `<div style="margin-bottom:6px">🦁 <strong>Courage:</strong> ${esc(todayMorning.courage)}</div>`,
+    todayMorning.temperance && `<div style="margin-bottom:6px">🧘 <strong>Temperance:</strong> ${esc(todayMorning.temperance)}</div>`,
+    todayMorning.wisdom && `<div style="margin-bottom:6px">🦉 <strong>Wisdom:</strong> ${esc(todayMorning.wisdom)}</div>`,
+  ].filter(Boolean);
+
+  const models = Object.entries(todayMorning.models || {}).filter(([,v]) => v);
+  const names = (todayMorning.marcusNames || []).filter(n => n);
+
+  container.innerHTML = `
+    ${virtues.length ? virtues.join('') : '<p style="color:var(--text3)">No virtues set for today.</p>'}
+    ${names.length ? `<div style="margin-top:8px;font-size:0.85rem;color:var(--text3)"><strong>🏛 Prepared for:</strong> ${names.join(', ')}</div>` : ''}
+    ${models.length ? `<div style="margin-top:4px;font-size:0.85rem;color:var(--text3)"><strong>🗿 Models:</strong> ${models.map(([k,v]) => v).join(', ')}</div>` : ''}
+  `;
 }
 
 // ===== ANGER LOG =====
@@ -441,7 +468,6 @@ async function deleteLog(id) {
 function renderHistory() {
   document.getElementById('logCount').textContent = `${state.logs.length} entries`;
   buildCalendarHeatmap();
-  buildTimeOfDayChart();
   buildIntensityChart();
   renderLogList();
 }
@@ -449,20 +475,25 @@ function renderHistory() {
 function buildCalendarHeatmap() {
   const container = document.getElementById('calendarHeatmap');
   const today = new Date();
+  today.setHours(0, 0, 0, 0);
   const cells = [];
 
   // Day labels
   let dayLabelsHtml = '<div class="heatmap-day-labels"><span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span></div>';
 
-  // Build 35 days (5 weeks) going back
-  for (let i = 34; i >= 0; i--) {
-    const d = new Date(today);
-    d.setDate(d.getDate() - i);
-    const key = d.toISOString().split('T')[0];
-    const dayLogs = state.logs.filter(l => l.date.startsWith(key));
+  // Build 28 days (4 weeks) going back
+  for (let i = 27; i >= 0; i--) {
+    const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() - i);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    const key = `${year}-${month}-${day}`;
+    const dayLogs = state.logs.filter(l => l.date && l.date.substring(0, 10) === key);
     const maxInt = dayLogs.length ? Math.max(...dayLogs.map(l => l.intensity)) : 0;
     const count = dayLogs.length;
     const dayNum = d.getDate();
+    const monthName = d.toLocaleDateString('en-US', { month: 'short' });
+    const showMonth = dayNum === 1 || i === 27;
 
     let bg = 'var(--surface3)';
     if (maxInt >= 8) bg = '#ef5350';
@@ -470,34 +501,13 @@ function buildCalendarHeatmap() {
     else if (maxInt >= 4) bg = '#ffb74d';
     else if (maxInt >= 1) bg = '#66bb6a';
 
-    cells.push(`<div class="heatmap-cell ${count ? 'has-data' : ''}" style="background:${bg}" title="${key}: ${count} entries, max ${maxInt}/10">
-      <span>${dayNum}</span>
+    cells.push(`<div class="heatmap-cell ${count ? 'has-data' : ''}" style="background:${bg}" title="${monthName} ${dayNum}: ${count} entries, max ${maxInt}/10">
+      <span>${showMonth ? monthName + ' ' : ''}${dayNum}</span>
       ${count ? `<span class="hm-count">${count}</span>` : ''}
     </div>`);
   }
 
   container.innerHTML = dayLabelsHtml + '<div class="calendar-heatmap" style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px">' + cells.join('') + '</div>';
-}
-
-function buildTimeOfDayChart() {
-  const container = document.getElementById('todChart');
-  // Group by 2-hour blocks
-  const blocks = Array(12).fill(0);
-  state.logs.forEach(l => {
-    const h = new Date(l.date).getHours();
-    blocks[Math.floor(h / 2)]++;
-  });
-  const max = Math.max(...blocks, 1);
-  const labels = ['12a','2a','4a','6a','8a','10a','12p','2p','4p','6p','8p','10p'];
-
-  container.innerHTML = blocks.map((count, i) => {
-    const h = Math.round((count / max) * 60);
-    const color = count === 0 ? 'var(--surface3)' : 'var(--accent)';
-    return `<div class="tod-bar-wrap">
-      <div class="tod-bar" style="height:${h}px;background:${color}"></div>
-      <span class="tod-bar-label">${labels[i]}</span>
-    </div>`;
-  }).join('');
 }
 
 function buildIntensityChart() {
@@ -621,10 +631,12 @@ function renderBreathing(el) {
       </div>
       <div class="breath-cycles" id="breathCycles">Cycles: 0 / 12</div>
       <div class="breath-controls">
-        <button class="btn btn-primary" id="breathStartBtn" onclick="startBreathing()">Start</button>
-        <button class="btn btn-secondary" id="breathStopBtn" onclick="stopBreathing()" style="display:none">Stop</button>
+        <button class="btn btn-primary" id="breathStartBtn" onclick="startBreathing()" style="display:none">Start</button>
+        <button class="btn btn-secondary" id="breathStopBtn" onclick="stopBreathing()">Stop</button>
       </div>
     </div>`;
+  // Auto-start
+  setTimeout(() => startBreathing(), 300);
 }
 
 function startBreathing() {
@@ -1375,21 +1387,23 @@ function updateProgressStats() {
 }
 
 function buildScoreDots() {
-  ['scoreAvgAnger','scoreEpisodes','scoreRecovery','scoreSkillUse','scoreSatisfaction'].forEach(id => {
-    const el = document.getElementById(id);
-    const metric = el.parentElement.dataset.metric;
-    const current = state.assessments.length ? state.assessments[0][metric] : 0;
-    el.innerHTML = Array.from({length:10}, (_, i) => {
-      const n = i + 1;
-      return `<div class="score-dot ${n === current ? 'selected' : ''}" onclick="selectScore('${metric}', ${n})">${n}</div>`;
-    }).join('');
+  // Now uses sliders - just set initial values from last assessment
+  const last = state.assessments.length ? state.assessments[0] : {};
+  ['avgAnger','episodes','recovery','skillUse','satisfaction'].forEach(metric => {
+    const slider = document.querySelector(`input[data-metric="${metric}"]`);
+    const display = document.getElementById('val' + metric.charAt(0).toUpperCase() + metric.slice(1));
+    if (slider && last[metric]) {
+      slider.value = last[metric];
+      if (display) { display.textContent = last[metric]; colorIntensity(display, last[metric]); }
+    }
   });
 }
 
-function selectScore(metric, val) {
-  document.querySelectorAll(`[data-metric="${metric}"] .score-dot`).forEach(d => {
-    d.classList.toggle('selected', parseInt(d.textContent) === val);
-  });
+function updateAssessSlider(el) {
+  const metric = el.dataset.metric;
+  const val = parseInt(el.value);
+  const display = document.getElementById('val' + metric.charAt(0).toUpperCase() + metric.slice(1));
+  if (display) { display.textContent = val; colorIntensity(display, val); }
   if (!window._pendingAssessment) window._pendingAssessment = {};
   window._pendingAssessment[metric] = val;
 }
@@ -1462,6 +1476,45 @@ function buildCognitiveDistancing(log) {
 
 // ===== STOIC FEATURES =====
 
+async function loadTodayStoicData() {
+  const today = new Date().toISOString().split('T')[0];
+  const allStoic = await dbGetAll('stoic');
+  const todayMorning = allStoic
+    .filter(e => e.type === 'morning' && e.date && e.date.startsWith(today))
+    .sort((a, b) => (b.date || '').localeCompare(a.date || ''))[0];
+
+  if (todayMorning) {
+    document.getElementById('virtueJustice').value = todayMorning.justice || '';
+    document.getElementById('virtueCourage').value = todayMorning.courage || '';
+    document.getElementById('virtueTemperance').value = todayMorning.temperance || '';
+    document.getElementById('virtueWisdom').value = todayMorning.wisdom || '';
+    (todayMorning.negViz || []).forEach((v, i) => {
+      const el = document.getElementById('negViz' + (i + 1));
+      if (el) el.value = v;
+    });
+    (todayMorning.marcusNames || []).forEach((v, i) => {
+      const el = document.getElementById('marcusNames' + (i + 1));
+      if (el) el.value = v;
+    });
+    const models = todayMorning.models || {};
+    if (models.justice) document.getElementById('modelJustice').value = models.justice;
+    if (models.courage) document.getElementById('modelCourage').value = models.courage;
+    if (models.temperance) document.getElementById('modelTemperance').value = models.temperance;
+    if (models.wisdom) document.getElementById('modelWisdom').value = models.wisdom;
+  }
+
+  // Load today's evening
+  const todayEvening = allStoic
+    .filter(e => e.type === 'evening' && e.date && e.date.startsWith(today))
+    .sort((a, b) => (b.date || '').localeCompare(a.date || ''))[0];
+
+  if (todayEvening) {
+    document.getElementById('senecaWell').value = todayEvening.well || '';
+    document.getElementById('senecaAvoided').value = todayEvening.avoided || '';
+    document.getElementById('senecaTomorrow').value = todayEvening.tomorrow || '';
+  }
+}
+
 async function saveStoicMorning() {
   const entry = {
     id: Date.now(),
@@ -1475,6 +1528,12 @@ async function saveStoicMorning() {
       document.getElementById('negViz1').value.trim(),
       document.getElementById('negViz2').value.trim(),
       document.getElementById('negViz3').value.trim(),
+    ].filter(v => v),
+    marcusNames: [
+      document.getElementById('marcusNames1').value.trim(),
+      document.getElementById('marcusNames2').value.trim(),
+      document.getElementById('marcusNames3').value.trim(),
+      document.getElementById('marcusNames4').value.trim(),
     ].filter(v => v),
     models: {
       justice: document.getElementById('modelJustice').value.trim(),
@@ -1500,12 +1559,13 @@ async function saveStoicMorning() {
   buildDailyChecklist();
 
   // Clear form
-  ['virtueJustice','virtueCourage','virtueTemperance','virtueWisdom','negViz1','negViz2','negViz3','modelJustice','modelCourage','modelTemperance','modelWisdom'].forEach(id => {
+  ['virtueJustice','virtueCourage','virtueTemperance','virtueWisdom','negViz1','negViz2','negViz3','marcusNames1','marcusNames2','marcusNames3','marcusNames4','modelJustice','modelCourage','modelTemperance','modelWisdom'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
 
   alert('Morning practice saved.');
+  showTodayVirtues();
   renderStoicHistory();
 }
 
